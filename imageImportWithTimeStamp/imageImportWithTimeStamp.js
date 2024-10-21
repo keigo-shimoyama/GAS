@@ -1,57 +1,75 @@
 function getParentFolder() {
-    // 自身のスプレッドシートのIDを取得
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var ssId = ss.getId();
-
-    // 親フォルダ(ファイル自身が格納されているフォルダ)を取得
-    var parentFolder = DriveApp.getFileById(ssId).getParents();
-    var folder = parentFolder.next();
-    
-    return folder;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ssId = ss.getId();
+  const parentFolder = DriveApp.getFileById(ssId).getParents();
+  return parentFolder.next();
 }
 
-function insertImages() {
-
-    const folder = getParentFolder();
-    const files = folder.getFiles();
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-
-    // Collect all files and their names
-    let row = 2;
-    let column = 2; // B column
-
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    const spreadsheetName = spreadsheet.getName();
-
-    let fileList = [];
-    while (files.hasNext()) {
-        const file = files.next();
-        if (file.getName() !== spreadsheetName) { // スプレッドシート自身のファイル名を除外
-            fileList.push({
-                id: file.getId(),
-                name: file.getName()
-            });
-        }
+function getFileList(folder, spreadsheetName) {
+  const files = folder.getFiles();
+  let fileList = [];
+  const now = new Date();
+  while (files.hasNext()) {
+    const file = files.next();
+    const createdDate = file.getDateCreated();
+    const timeDifference = (now - createdDate) / (1000 * 60); // difference in minutes
+    if (file.getName() !== spreadsheetName && timeDifference <= 5) {
+      fileList.push({
+        id: file.getId(),
+        name: file.getName(),
+      });
     }
+  }
+  return fileList.sort((a, b) => a.name.localeCompare(b.name));
+}
 
-    // Sort files by their names in ascending order
-    fileList.sort((a, b) => a.name.localeCompare(b.name));
+function insertImages(sheet, fileList) {
+  let row = 2;
+  const column = 2; // B column
+  fileList.forEach((file) => {
+    const fileUrl = "https://lh3.google.com/u/0/d/" + file.id;
+    const formula = `=IMAGE("${fileUrl}", 1)`;
+    sheet.getRange(row, column).setFormula(formula);
+    row++;
+  });
+}
 
-    // Insert sorted images into the spreadsheet
-    fileList.forEach(file => {
-        const fileUrl = 'https://lh3.google.com/u/0/d/' + file.id;
-        const formula = '=IMAGE("' + fileUrl + '", 1)';
-        sheet.getRange(row, column).setFormula(formula);
-        row++;
-    });
+function insertTimestamps(sheet, fileList) {
+  let row = 2;
+  const column = 1; // A column
+  fileList.forEach((file) => {
+    const timeFormatted = file.name
+      .match(/_(\d{2})\.(\d{2})\./)
+      .slice(1, 3)
+      .join(":");
+    sheet.getRange(row, column).setValue(timeFormatted);
+    row++;
+  });
+}
 
-    // Insert timestamps into the spreadsheet
-    row = 2;
-    column = 1; // A column
+function renameSpreadsheet(sheet, fileList) {
+  const now = new Date();
+  const formattedDate = Utilities.formatDate(
+    now,
+    Session.getScriptTimeZone(),
+    "yyyy-MM-dd_"
+  );
+  const newSpreadsheetName =
+    formattedDate + fileList[0].name.match(/[^\.]+/)[0] + "_";
+  sheet.setName(newSpreadsheetName);
+}
 
-    fileList.forEach(file => {
-        const timeFormatted = file.name.match(/_(\d{2})\.(\d{2})\./).slice(1, 3).join(":");
-        sheet.getRange(row, column).setValue(timeFormatted);
-        row++;
-    });
+function insertImagesAndTimestamps() {
+  const folder = getParentFolder();
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadsheet.getActiveSheet();
+  const spreadsheetName = spreadsheet.getName();
+  const fileList = getFileList(folder, spreadsheetName);
+  if (fileList.length === 0) {
+    Browser.msgBox("No new images found in the folder.");
+    return;
+  }
+  insertImages(sheet, fileList);
+  insertTimestamps(sheet, fileList);
+  renameSpreadsheet(sheet, fileList);
 }
