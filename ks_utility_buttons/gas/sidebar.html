@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <title>Sidebar</title>
+    <link
+      rel="stylesheet"
+      href="https://ssl.gstatic.com/docs/script/css/add-ons1.css"
+    />
     <script>
       function deleteEmptyRows() {
         google.script.run.deleteEmptyRows();
@@ -10,6 +14,19 @@
     </script>
   </head>
   <body>
-    <button onClick="deleteEmptyRows()">空白の行を削除！</button>
+    <div class="sidebar">
+      <div class="block">
+        <button onClick="deleteEmptyRows()">空白の行を削除</button>
+      </div>
+      <div class="block">
+        <button>sample</button>
+      </div>
+      <div class="block">
+        <button>sample</button>
+      </div>
+      <div class="block">
+        <button>sample</button>
+      </div>
+    </div>
   </body>
 </html>

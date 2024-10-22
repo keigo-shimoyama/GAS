@@ -16,6 +16,6 @@ function onOpen(e) {
         .addToUi();
 }
 function showSidebar() {
-    var sidebarUi = HtmlService.createHtmlOutputFromFile("gas/sidebar").setTitle("title");
+    var sidebarUi = HtmlService.createHtmlOutputFromFile("gas/sidebar").setTitle("Utility Bar");
     SpreadsheetApp.getUi().showSidebar(sidebarUi);
 }
